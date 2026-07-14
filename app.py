@@ -146,36 +146,51 @@ def master_log():
     search_query = request.args.get('q', '')
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
+    # New: get the page number
+    page = int(request.args.get('page', 1))
+    per_page = 20
+    offset = (page - 1) * per_page
     
     conn = get_db()
     
-    # We build the SQL query dynamically based on what the user filled out
-    query = '''
-        SELECT Logs.timestamp, Logs.content, Users.username, Users.first_name, Users.last_name
+    # Base query components
+    base_query = '''
         FROM Logs JOIN Users ON Logs.user_id = Users.id 
         WHERE Logs.status = 'committed'
     '''
     params = []
     
     if search_query:
-        query += " AND (Logs.content LIKE ? OR Users.username LIKE ?)"
+        base_query += " AND (Logs.content LIKE ? OR Users.username LIKE ?)"
         params.extend(['%' + search_query + '%', '%' + search_query + '%'])
         
     if start_date:
-        # SQLite adjusts the UTC time to GMT+10 before checking the date!
-        query += " AND DATE(datetime(Logs.timestamp, '+10 hours')) >= ?"
+        base_query += " AND DATE(datetime(Logs.timestamp, '+10 hours')) >= ?"
         params.append(start_date)
         
     if end_date:
-        query += " AND DATE(datetime(Logs.timestamp, '+10 hours')) <= ?"
+        base_query += " AND DATE(datetime(Logs.timestamp, '+10 hours')) <= ?"
         params.append(end_date)
         
-    query += " ORDER BY Logs.timestamp DESC"
+    # Count total matching records for pagination navigation
+    total_count = conn.execute("SELECT COUNT(*) " + base_query, params).fetchone()[0]
     
-    logs = conn.execute(query, params).fetchall()
+    # Fetch paginated logs
+    query = "SELECT Logs.timestamp, Logs.content, Users.username, Users.first_name, Users.last_name " + base_query
+    query += " ORDER BY Logs.timestamp DESC LIMIT ? OFFSET ?"
+    
+    logs = conn.execute(query, params + [per_page, offset]).fetchall()
     conn.close()
     
-    return render_template('master_log.html', logs=logs, search_query=search_query, start_date=start_date, end_date=end_date)
+    return render_template(
+        'master_log.html', 
+        logs=logs, 
+        search_query=search_query, 
+        start_date=start_date, 
+        end_date=end_date,
+        page=page,
+        total_pages=(total_count + per_page - 1) // per_page
+    )
 
 # NEW ROUTE: Delete a draft
 @app.route('/delete_draft/<int:draft_id>', methods=['POST'])
@@ -200,7 +215,7 @@ def export_csv():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    # NEW: Admin check!
+    # Admin check
     if session.get('role') != 'Admin':
         return "Access Denied. Only Admins can export the Master Log."
         
@@ -210,9 +225,9 @@ def export_csv():
     
     conn = get_db()
     
-    # Rebuilding the exact same query for the export
+    # Updated query to include first and last names
     query = '''
-        SELECT Logs.timestamp, Logs.content, Users.username 
+        SELECT Logs.timestamp, Logs.content, Users.username, Users.first_name, Users.last_name 
         FROM Logs JOIN Users ON Logs.user_id = Users.id 
         WHERE Logs.status = 'committed'
     '''
@@ -238,6 +253,7 @@ def export_csv():
     writer.writerow(['Timestamp', 'Author', 'Log Content'])
     
     for log in logs:
+        # Date formatting for CSV
         try:
             dt = datetime.strptime(log['timestamp'], '%Y-%m-%d %H:%M:%S')
             local_dt = dt + timedelta(hours=10)
@@ -245,7 +261,9 @@ def export_csv():
         except:
             csv_time = log['timestamp'] 
 
-        writer.writerow([csv_time, log['username'], log['content']])
+        # Combined name format
+        author_name = f"{log['first_name']} {log['last_name']} (@{log['username']})"
+        writer.writerow([csv_time, author_name, log['content']])
         
     return Response(
         output.getvalue(),
