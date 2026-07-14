@@ -34,11 +34,3 @@ web logbook for shift tracking.
 * **Commit**: End your shift and save to the Master Log.
 * **Admin Tools**: Manage team accounts and purge old logs.
 * **Search**: Easily filter by keyword or date range.
-
-## How to update your repo:
-Whenever you make a change, just run these three commands to save your progress:
-
-```bash
-git add .
-git commit -m "Update: [Brief description of what you changed]"
-git push
