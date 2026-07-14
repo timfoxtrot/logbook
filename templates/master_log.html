@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="bg-white p-6 rounded-lg shadow-md mb-6">
+    <h2 class="text-xl font-bold mb-4">Master Log</h2>
+
+    <form method="GET" action="/master_log" class="flex flex-wrap gap-4 items-center">
+        <input type="text" name="q" placeholder="Search..." class="flex-1 border p-2 rounded">
+        
+        <div class="flex items-center gap-2 text-sm text-gray-600 font-medium">
+            <label>From</label>
+            <input type="date" name="start_date" class="border p-2 rounded">
+            <span>to</span>
+            <input type="date" name="end_date" class="border p-2 rounded">
+        </div>
+        
+        <button type="submit" class="bg-purple-500 text-white px-6 py-2 rounded font-bold hover:bg-purple-600 transition">
+            Filter
+        </button>
+        
+        {% if session.get('role') == 'Admin' %}
+        <a href="{{ url_for('export_csv', q=request.args.get('q'), start_date=request.args.get('start_date'), end_date=request.args.get('end_date')) }}" 
+           class="bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700 transition">
+            Export
+        </a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow-md">
+    {% for log in logs %}
+        {% set current_date = log['timestamp'] | localdate %}
+        
+        {# Date Header #}
+        {% if loop.first or current_date != logs[loop.index0 - 1]['timestamp'] | localdate %}
+            <div class="relative py-8">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300"></div></div>
+                <div class="relative flex justify-center">
+                    <span class="bg-white px-4 text-sm font-bold text-gray-500 uppercase tracking-widest">{{ current_date }}</span>
+                </div>
+            </div>
+        {% endif %}
+        
+        {# Group by User #}
+        {% if loop.first or log['user_id'] != logs[loop.index0 - 1]['user_id'] or current_date != logs[loop.index0 - 1]['timestamp'] | localdate %}
+            <div class="mt-4 mb-2 pl-2 border-l-4 border-purple-500">
+                <h3 class="font-bold text-gray-800 text-lg">{{ log['first_name'] }} {{ log['last_name'] }}</h3>
+            </div>
+        {% endif %}
+        
+        {# Individual Log Entries #}
+        <div class="ml-6 p-4 bg-gray-50 my-2 rounded-r-lg hover:bg-gray-100 transition border-l border-gray-200">
+            <p class="text-gray-900 font-bold font-mono text-base mb-1">{{ log['timestamp'] | timeformat }}</p>
+            <p class="text-gray-700 mt-1">{{ log['content'] }}</p>
+        </div>
+    {% else %}
+        <p class="text-gray-500 italic text-center py-4">No logs found.</p>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - GIAA Terminal Center Logbook</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-md w-96">
+        
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="mb-4 p-3 bg-green-100 border border-green-200 text-green-700 rounded-lg text-sm font-semibold text-center">
+              {{ messages[0] }}
+            </div>
+          {% endif %}
+        {% endwith %}
+        
+        <div class="flex justify-center mb-6">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="w-3/4 h-auto object-contain">
+        </div>
+        
+        <form method="POST" action="/login">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Username</label>
+                <input type="text" name="username" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                <input type="password" name="password" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <button type="submit" class="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+                Login
+            </button>
+        </form>
+    </div>
+</body>
+</html>
