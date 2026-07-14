@@ -214,10 +214,6 @@ def delete_draft(draft_id):
 def export_csv():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
-    # Admin check
-    if session.get('role') != 'Admin':
-        return "Access Denied. Only Admins can export the Master Log."
         
     search_query = request.args.get('q', '')
     start_date = request.args.get('start_date', '')

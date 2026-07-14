@@ -16,14 +16,12 @@
         
         <button type="submit" class="bg-purple-500 text-white px-6 py-2 rounded font-bold hover:bg-purple-600 transition">
             Filter
-        </button>
+        </button>  
         
-        {% if session.get('role') == 'Admin' %}
         <a href="{{ url_for('export_csv', q=search_query, start_date=start_date, end_date=end_date) }}" 
            class="bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700 transition">
             Export
         </a>
-        {% endif %}
     </form>
 </div>
 
